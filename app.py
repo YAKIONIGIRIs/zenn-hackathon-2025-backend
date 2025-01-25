@@ -17,10 +17,21 @@ import sys
 from types import FrameType
 
 from flask import Flask, jsonify, request
+from flask_cors import CORS
 
 from utils.logging import logger
 
 app = Flask(__name__)
+CORS(
+    app,
+    resources={
+        r"/*": {
+            "origins": "*",
+            "methods": ["GET", "POST", "OPTIONS"],
+            "allow_headers": ["Content-Type", "Authorization"],
+        }
+    },
+)
 
 
 @app.route("/")
@@ -33,6 +44,7 @@ def hello() -> str:
 
     return "Hello, World!"
 
+
 @app.route("/get_supplement", methods=["POST"])
 def get_supplement() -> str:
     # Get JSON data from POST request
@@ -42,9 +54,10 @@ def get_supplement() -> str:
     # Create stub
     jsondata_supplement = {
         "word": "テスト",
-        "description": "テストは単なる技術的な検証ではなく、提案手法の「実現可能性」と「実用性」を示すための重要なステップです。"
+        "description": "テストは単なる技術的な検証ではなく、提案手法の「実現可能性」と「実用性」を示すための重要なステップです。",
     }
     return jsonify(jsondata_supplement)
+
 
 def shutdown_handler(signal_int: int, frame: FrameType) -> None:
     logger.info(f"Caught Signal {signal.strsignal(signal_int)}")
