@@ -17,12 +17,26 @@ import sys
 from types import FrameType
 
 from flask import Flask, jsonify, request
+from flask_cors import CORS
 
 from utils.logging import logger
 from utils.ask_gemini import GeminiHelper
 
 app = Flask(__name__)
 gemini_helper = None
+
+CORS(
+    app,
+    resources={
+        r"/*": {
+            "origins": ["*", "chrome-extension://*"],
+            "methods": ["GET", "POST", "OPTIONS"],
+            "allow_headers": ["Content-Type", "Authorization"],
+            "supports_credentials": True,
+        }
+    },
+)
+
 
 @app.route("/")
 def hello() -> str:
@@ -34,6 +48,7 @@ def hello() -> str:
 
     return "Hello, World!"
 
+
 @app.route("/get_supplement", methods=["POST"])
 def get_supplement() -> str:
     # Get JSON data from POST request
@@ -44,6 +59,7 @@ def get_supplement() -> str:
     jsondata_supplement = gemini_helper.ask_gemini()    
 
     return jsonify(jsondata_supplement)
+
 
 def shutdown_handler(signal_int: int, frame: FrameType) -> None:
     logger.info(f"Caught Signal {signal.strsignal(signal_int)}")
