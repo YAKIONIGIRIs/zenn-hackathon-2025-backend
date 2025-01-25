@@ -16,7 +16,7 @@ import signal
 import sys
 from types import FrameType
 
-from flask import Flask
+from flask import Flask, jsonify, request
 
 from utils.logging import logger
 
@@ -33,6 +33,18 @@ def hello() -> str:
 
     return "Hello, World!"
 
+@app.route("/get_supplement")
+def get_supplement() -> str:
+    # Get JSON data from POST request
+    chatdata_json = request.get_json()
+    logger.info(f"Received data: {chatdata_json}")
+
+    # Create stub
+    jsondata_supplement = {
+        "word": "テスト",
+        "description": "テストは単なる技術的な検証ではなく、提案手法の「実現可能性」と「実用性」を示すための重要なステップです。"
+    }
+    return jsonify(jsondata_supplement)
 
 def shutdown_handler(signal_int: int, frame: FrameType) -> None:
     logger.info(f"Caught Signal {signal.strsignal(signal_int)}")
