@@ -26,9 +26,10 @@ CORS(
     app,
     resources={
         r"/*": {
-            "origins": "*",
+            "origins": ["*", "chrome-extension://*"],
             "methods": ["GET", "POST", "OPTIONS"],
             "allow_headers": ["Content-Type", "Authorization"],
+            "supports_credentials": True,
         }
     },
 )
