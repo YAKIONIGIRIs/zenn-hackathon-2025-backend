@@ -15,7 +15,7 @@ class GeminiHelper:
         # Initialize Vertex AI
         aiplatform.init(project=project_id, location=location)
         self.model = GenerativeModel("gemini-1.5-flash-002")
-        # self.chat = self.model.start_chat()
+        self.chat = self.model.start_chat()
 
     def add_text(self, text: str):
         self.input_text += text
