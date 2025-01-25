@@ -33,7 +33,7 @@ def hello() -> str:
 
     return "Hello, World!"
 
-@app.route("/get_supplement")
+@app.route("/get_supplement", methods=["POST"])
 def get_supplement() -> str:
     # Get JSON data from POST request
     chatdata_json = request.get_json()
