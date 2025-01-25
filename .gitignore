@@ -16,6 +16,7 @@
 
 # Exclude locally installed dependencies
 venv/
+.venv/
 __pycache__/
 
 # Exclude local IDE settings
@@ -27,3 +28,4 @@ __pycache__/
 
 # macOS
 **/.DS_Store
+
