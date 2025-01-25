@@ -19,9 +19,10 @@ from types import FrameType
 from flask import Flask, jsonify, request
 
 from utils.logging import logger
+from utils.ask_gemini import GeminiHelper
 
 app = Flask(__name__)
-
+gemini_helper = None
 
 @app.route("/")
 def hello() -> str:
@@ -39,11 +40,9 @@ def get_supplement() -> str:
     chatdata_json = request.get_json()
     logger.info(f"Received data: {chatdata_json}")
 
-    # Create stub
-    jsondata_supplement = {
-        "word": "テスト",
-        "description": "テストは単なる技術的な検証ではなく、提案手法の「実現可能性」と「実用性」を示すための重要なステップです。"
-    }
+    gemini_helper.add_text(chatdata_json["text"])
+    jsondata_supplement = gemini_helper.ask_gemini()    
+
     return jsonify(jsondata_supplement)
 
 def shutdown_handler(signal_int: int, frame: FrameType) -> None:
@@ -64,6 +63,9 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, shutdown_handler)
 
     app.run(host="localhost", port=8080, debug=True)
+
+    # Constructor
+    gemini_helper = GeminiHelper()
 else:
     # handles Cloud Run container termination
     signal.signal(signal.SIGTERM, shutdown_handler)
