@@ -23,7 +23,7 @@ from utils.logging import logger
 from utils.ask_gemini import GeminiHelper
 
 app = Flask(__name__)
-gemini_helper = None
+gemini_helper = dict()
 
 CORS(
     app,
@@ -48,18 +48,113 @@ def hello() -> str:
 
     return "Hello, World!"
 
-
-@app.route("/get_supplement", methods=["POST"])
-def get_supplement() -> str:
+@app.route("/start_conversation", methods=["POST"])
+def start_conversation() -> str:
+    """
+    start_conversation: Start a new conversation with a new session_id
+    :param: session_id: str
+    :return: response: dict
+    """
     # Get JSON data from POST request
     chatdata_json = request.get_json()
     logger.info(f"Received data: {chatdata_json}")
 
-    gemini_helper.add_text(chatdata_json["text"])
-    jsondata_supplement = gemini_helper.ask_gemini()    
+    try:
+        # Check if session_id exists in gemini_helper
+        if (not gemini_helper.keys(chatdata_json["session_id"])):
+            gemini_helper[chatdata_json["session_id"]] = GeminiHelper()
+            jsondata_start = {
+                "result": True,
+                "message": "Conversation started"
+            }
+        else:
+            # If session_id exists, return error message
+            jsondata_start = {
+                "result": False,
+                "message": "session_id already exists"
+            }
+    except KeyError:
+        # If session_id does not exist, return error message
+        jsondata_start = {
+            "result": False,
+            "message": "keyError"
+        }
 
-    return jsonify(jsondata_supplement)
+    response = jsonify(jsondata_start)
+    return response
 
+@app.route("/get_supplement", methods=["POST"])
+def get_supplement() -> str:
+    """
+    get_supplement: Get supplement data from Gemini API
+    :param: session_id: str
+    :param: text: str
+    :return: response: dict
+    """
+    # Get JSON data from POST request
+    chatdata_json = request.get_json()
+    logger.info(f"Received data: {chatdata_json}")
+
+    try:
+        # Check if session_id exists in gemini_helper
+        if (not gemini_helper.keys(chatdata_json["session_id"])):        
+            # If session_id exists, add text to gemini_helper and ask gemini
+            gemini_helper[chatdata_json["session_id"]].add_text(chatdata_json["text"])
+            jsondata_supplement = gemini_helper[chatdata_json["session_id"]].ask_gemini()
+            jsondata_supplement["result"] = True  
+        else:
+            # If session_id does not exist, return error message
+            jsondata_supplement = {
+                "supplement": [],
+                "result": False,
+                "message": "No session_id found"
+            }
+    except KeyError:
+        # If session_id does not exist, return error message
+        jsondata_supplement = {
+            "supplement": [],
+            "result": False,
+            "message": "keyError"
+        }
+
+    response = jsonify(jsondata_supplement)
+    return response
+
+@app.route("/end_conversation", methods=["POST"])
+def end_conversation() -> str:
+    """
+    end_conversation: End conversation with session_id
+    :param: session_id: str
+    :return: response: dict
+    """
+    # Get JSON data from POST request
+    chatdata_json = request.get_json()
+    logger.info(f"Received data: {chatdata_json}")
+
+    try:
+        # Check if session_id exists in gemini_helper
+        if (not gemini_helper.keys(chatdata_json["session_id"])):        
+            # If session_id exists, end conversation
+            gemini_helper.pop(chatdata_json["session_id"])
+            jsondata_end = {
+                "message": "Conversation ended",
+                "result": True
+            }
+        else:
+            # If session_id does not exist, return error message
+            jsondata_end = {
+                "message": "No session_id found",
+                "result": False
+            }
+    except KeyError:
+        # If session_id does not exist, return error message
+        jsondata_end = {
+            "message": "keyError",
+            "result": False
+        }
+
+    response = jsonify(jsondata_end)
+    return response
 
 def shutdown_handler(signal_int: int, frame: FrameType) -> None:
     logger.info(f"Caught Signal {signal.strsignal(signal_int)}")
@@ -80,8 +175,6 @@ if __name__ == "__main__":
 
     app.run(host="localhost", port=8080, debug=True)
 
-    # Constructor
-    gemini_helper = GeminiHelper()
 else:
     # handles Cloud Run container termination
     signal.signal(signal.SIGTERM, shutdown_handler)
