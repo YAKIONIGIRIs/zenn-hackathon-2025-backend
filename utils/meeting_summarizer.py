@@ -1,7 +1,5 @@
-import json
-
 import vertexai
-from vertexai.preview.generative_models import GenerationConfig, GenerativeModel
+from vertexai.generative_models import GenerationConfig, GenerativeModel
 
 # Vertex AI の初期化
 PROJECT_ID = "ykongrs-zenn-hackathon-2025"
@@ -44,24 +42,19 @@ class MeetingSummarizer:
         Returns:
             dict: 生成された要約（TTSサマリー、箇条書き、アクションアイテム）
         """
-        prompt = {
-            "schema": response_schema,
-            "text": f"""
-            以下の会議内容を要約してください。
-            - 全体の要約は自然な日本語で
-            - 重要なポイントは箇条書きで
-            - アクションアイテムは具体的なTodoとして
+        prompt = f"""
+        以下の会議内容を要約してください。
+        - 全体の要約は自然な日本語で
+        - 重要なポイントは箇条書きで
+        - アクションアイテムは具体的なTodoとして
 
-            会議内容:
-            {meeting_text}
-            """,
-        }
+        会議内容:
+        {meeting_text}
+        """
 
         response = self.model.generate_content(
             prompt,
-            generation_config=GenerationConfig(
-                temperature=0.2,
-            ),
+            generation_config=GenerationConfig(response_mime_type="application/json", response_schema=response_schema),
         )
 
-        return json.loads(response.text)
+        return response.text
