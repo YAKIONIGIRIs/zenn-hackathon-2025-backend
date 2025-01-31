@@ -1,3 +1,5 @@
+import json
+
 import vertexai
 from vertexai.preview.generative_models import GenerationConfig, GenerativeModel
 
@@ -42,19 +44,24 @@ class MeetingSummarizer:
         Returns:
             dict: 生成された要約（TTSサマリー、箇条書き、アクションアイテム）
         """
-        prompt = f"""
-        以下の会議内容を要約してください。
-        - 全体の要約は自然な日本語で
-        - 重要なポイントは箇条書きで
-        - アクションアイテムは具体的なTodoとして
+        prompt = {
+            "schema": response_schema,
+            "text": f"""
+            以下の会議内容を要約してください。
+            - 全体の要約は自然な日本語で
+            - 重要なポイントは箇条書きで
+            - アクションアイテムは具体的なTodoとして
 
-        会議内容:
-        {meeting_text}
-        """
+            会議内容:
+            {meeting_text}
+            """,
+        }
 
         response = self.model.generate_content(
             prompt,
-            generation_config=GenerationConfig(response_mime_type="application/json", response_schema=response_schema),
+            generation_config=GenerationConfig(
+                temperature=0.2,
+            ),
         )
 
-        return response.text
+        return json.loads(response.text)
