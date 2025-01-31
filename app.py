@@ -19,11 +19,13 @@ from types import FrameType
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 
-from utils.logging import logger
 from utils.ask_gemini import GeminiHelper
+from utils.logging import logger
+from utils.meeting_summarizer import MeetingSummarizer
 
 app = Flask(__name__)
 gemini_helper = None
+meeting_summarizer = MeetingSummarizer()
 
 CORS(
     app,
@@ -49,6 +51,22 @@ def hello() -> str:
     return "Hello, World!"
 
 
+@app.route("/summarize_meeting", methods=["GET"])
+def summarize_meeting() -> str:
+    try:
+        # サンプルミーティングファイルを読み込む
+        with open("utils/sample_meeting.txt", "r", encoding="utf-8") as file:
+            meeting_text = file.read()
+
+        # 会議内容を要約
+        summary = meeting_summarizer.summarize(meeting_text)
+
+        return jsonify({"status": "success", "data": summary})
+    except Exception as e:
+        logger.error(f"Error summarizing meeting: {str(e)}")
+        return jsonify({"status": "error", "message": "会議の要約中にエラーが発生しました"}), 500
+
+
 @app.route("/get_supplement", methods=["POST"])
 def get_supplement() -> str:
     # Get JSON data from POST request
@@ -56,7 +74,7 @@ def get_supplement() -> str:
     logger.info(f"Received data: {chatdata_json}")
 
     gemini_helper.add_text(chatdata_json["text"])
-    jsondata_supplement = gemini_helper.ask_gemini()    
+    jsondata_supplement = gemini_helper.ask_gemini()
 
     return jsonify(jsondata_supplement)
 
