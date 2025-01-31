@@ -2,7 +2,7 @@ import json
 import sys
 
 import vertexai
-from vertexai.generative_models import GenerativeModel
+from vertexai.preview.generative_models import GenerationConfig, GenerativeModel
 
 project_id = "ykongrs-zenn-hackathon-2025"
 location = "us-central1"
