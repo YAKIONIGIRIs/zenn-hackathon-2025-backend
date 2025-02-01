@@ -181,13 +181,15 @@ def get_supplement() -> str:
                 transcript_text = transcript_data["transcript"]
                 # Get the supplement data from the Gemini API
                 supplements = ask_gemini.word_extraction(chatdata_json["role"], transcript_text)
+                logger.debug(f"Supplements: {supplements}")
                 
                 # Get the document list from Firestore
                 saved_words = connect_firestore.get_word_list("users", chatdata_json["userName"])
-                logger.info(f"Saved words: {saved_words}")
+                logger.debug(f"Saved words: {saved_words}")
 
                 # Match the document list with the word list
                 for supplement in supplements:
+                    logger.debug(f"Supplement: {supplement}")
                     if supplement["word"] not in saved_words:
                         # Add the supplement data to the supplement list
                         supplements_data.append(supplement)
