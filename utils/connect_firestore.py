@@ -13,6 +13,7 @@ def init_firestore():
 
 # Add data to Firestore
 def add_data(collection_name, document_id, data):
+    # Initialize Firestore DB
     db = init_firestore()
     db.collection(collection_name).document(document_id).set(data)
     print(f'Data added to {collection_name}/{document_id}')
@@ -48,15 +49,15 @@ def get_document_list(collection_name):
 def get_word_list(collection_name, document_id):
     db = init_firestore()
     doc = db.collection(collection_name).document(document_id).get()
+    word_list = []
     if doc.exists:
         # Get the key list in the selected document_id
         word_list = list(doc.to_dict().keys())
 
         print(f'Word list from {collection_name}/{document_id}: {word_list}')
-        return word_list
     else:
         print(f'No such document: {collection_name}/{document_id}')
-        return None
+    return word_list
 
 # Example usage
 if __name__ == "__main__":

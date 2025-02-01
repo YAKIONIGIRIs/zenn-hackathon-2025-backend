@@ -189,7 +189,7 @@ def get_supplement() -> str:
                 for supplement in supplements:
                     if supplement["word"] not in saved_words:
                         # Add the supplement data to the supplement list
-                        supplements_data.append(supplements_data)
+                        supplements_data.append(supplement)
                         # Add the supplement data to Firestore
                         connect_firestore.add_data("users", chatdata_json["userName"], supplement)
                     else:
