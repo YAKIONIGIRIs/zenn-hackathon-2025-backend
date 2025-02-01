@@ -1,3 +1,5 @@
+import json
+
 import vertexai
 from vertexai.generative_models import GenerationConfig, GenerativeModel
 
@@ -57,4 +59,4 @@ class MeetingSummarizer:
             generation_config=GenerationConfig(response_mime_type="application/json", response_schema=response_schema),
         )
 
-        return response.text
+        return json.loads(response.text)
