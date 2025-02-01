@@ -8,3 +8,6 @@ structlog==24.1.0
 # google-auth==2.3.2
 google-cloud-aiplatform==1.71.1
 # vertexai
+
+firebase-admin==6.0.1
+google-cloud-firestore==2.11.0
