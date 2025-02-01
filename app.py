@@ -24,7 +24,7 @@ from utils.logging import logger
 from utils.meeting_summarizer import MeetingSummarizer
 
 app = Flask(__name__)
-gemini_helper = None
+# gemini_helper = dict()
 meeting_summarizer = MeetingSummarizer()
 
 CORS(
@@ -66,18 +66,151 @@ def summarize_meeting() -> str:
         logger.error(f"Error summarizing meeting: {str(e)}")
         return jsonify({"status": "error", "message": "会議の要約中にエラーが発生しました"}), 500
 
+@app.route("/start_meet", methods=["POST"])
+def start_meet() -> str:
+    """
+    start_meet: Start a new meet with a new userName
+    :param: meetId: str
+    :return: response: dict
+    """
+    # Get JSON data from POST request
+    chatdata_json = request.get_json()
+    logger.info(f"Received data: {chatdata_json}")
+    # Start a new meet with a new meetId
+    try:
+        if ("meetId" in chatdata_json):
+            # Return the meetId as the userName
+            jsondata_start = {
+                "result": True,
+                "message": ""
+            }
+        else:
+            jsondata_start = {
+                "result": False,
+                "message": "missing required keys"
+            }
+    except Exception as e:
+        logger.error(f"Error starting meet: {e}")
+        jsondata_start = {
+            "result": False,
+            "message": "error starting meet"
+        }
 
-@app.route("/get_supplement", methods=["POST"])
-def get_supplement() -> str:
+    response = jsonify(jsondata_start)
+    return response
+
+@app.route("/save_transcript", methods=["POST"])
+def save_transcript() -> str:
+    """
+    save_transcript: Save transcript data to Firestore
+    :param: meetId: str
+    :param: userName: str
+    :param: transcript: str
+    :return: response: dict
+    """
     # Get JSON data from POST request
     chatdata_json = request.get_json()
     logger.info(f"Received data: {chatdata_json}")
 
-    gemini_helper.add_text(chatdata_json["text"])
-    jsondata_supplement = gemini_helper.ask_gemini()
+    # Store the text date to the Firestrore
+    try:
+        # Check if the json data has the required keys
+        if ("meetId" in chatdata_json and "userName" in chatdata_json and "transcript" in chatdata_json):
+            jsondata_save = {
+                "result": True,
+                "message": ""
+            }
+        else:
+            jsondata_save = {
+                "result": False,
+                "message": "missing required keys"
+            }
+    except Exception as e:
+        logger.error(f"Error saving transcript: {e}")
+        jsondata_save = {
+            "result": False,
+            "message": "error saving transcript"
+        }
 
-    return jsonify(jsondata_supplement)
+    response = jsonify(jsondata_save)
+    return response
 
+
+@app.route("/get_supplement", methods=["POST"])
+def get_supplement() -> str:
+    """
+    get_supplement: Get supplement data from Gemini API
+    :param: userName: str
+    :param: text: str
+    :return: response: dict
+    """
+    # Get JSON data from POST request
+    chatdata_json = request.get_json()
+    logger.info(f"Received data: {chatdata_json}")
+
+    try:
+        # Check if the json data has the required keys
+        if ("meetId" in chatdata_json and "userName" in chatdata_json and "role" in chatdata_json):
+            testdata = {
+                "word": "テスト文章",
+                "description": "テスト補足"
+            }
+            jsondata_supplement = {
+                "supplement": [testdata],
+                "result": True,
+                "message": ""
+            }
+        else:
+            # If the json data does not have the required keys, return error message
+            jsondata_supplement = {
+                "supplement": [],
+                "result": False,
+                "message": "missing required keys"
+            }
+    except Exception as e:
+        logger.error(f"Error getting supplement: {e}")
+        jsondata_supplement = {
+            "supplement": [],
+            "result": False,
+            "message": "error getting supplement"
+        }
+
+    response = jsonify(jsondata_supplement)
+    return response
+
+@app.route("/end_meet", methods=["POST"])
+def end_meet() -> str:
+    """
+    end_meet: End meet with meetId
+    :param: meetId: str
+    :return: response: dict
+    """
+    # Get JSON data from POST request
+    chatdata_json = request.get_json()
+    logger.info(f"Received data: {chatdata_json}")
+
+    try:
+        # Check if the json data has the required keys
+        if ("meetId" in chatdata_json):
+            jsondata_end = {
+                "result": True,
+                "message": ""
+            }
+        else:
+            # If the json data does not have the required keys, return error message
+            jsondata_end = {
+                "result": False,
+                "message": "missing required keys"
+            }
+    except Exception as e:
+        logger.error(f"Error ending meet: {e}")
+        jsondata_end = {
+            "result": False,
+            "message": "error ending meet"
+        }
+
+    response = jsonify(jsondata_end)
+    return response
 
 def shutdown_handler(signal_int: int, frame: FrameType) -> None:
     logger.info(f"Caught Signal {signal.strsignal(signal_int)}")
@@ -98,8 +231,6 @@ if __name__ == "__main__":
 
     app.run(host="localhost", port=8080, debug=True)
 
-    # Constructor
-    gemini_helper = GeminiHelper()
 else:
     # handles Cloud Run container termination
     signal.signal(signal.SIGTERM, shutdown_handler)
