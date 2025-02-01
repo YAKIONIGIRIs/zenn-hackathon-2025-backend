@@ -19,9 +19,10 @@ from types import FrameType
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 
-from utils.ask_gemini import GeminiHelper
 from utils.logging import logger
 from utils.meeting_summarizer import MeetingSummarizer
+import utils.ask_gemini as ask_gemini
+import utils.connect_firestore as connect_firestore
 
 app = Flask(__name__)
 # gemini_helper = dict()
@@ -116,11 +117,30 @@ def save_transcript() -> str:
     try:
         # Check if the json data has the required keys
         if ("meetId" in chatdata_json and "userName" in chatdata_json and "transcript" in chatdata_json):
+            # Save the transcript data to Firestore
+            transcript_text = ""
+            
+            # Get the transcript data from Firestore
+            firestore_data = connect_firestore.get_data("meeting", chatdata_json["meetId"])
+            
+            # If the transcript data exists, add the new transcript text to the existing transcript text
+            if firestore_data:
+                transcript_text = firestore_data["transcript"] + chatdata_json["transcript"]
+            # If the transcript data does not exist, save the new transcript text
+            else:
+                transcript_text = chatdata_json["transcript"] 
+
+            # Save the transcript data to Firestore
+            connect_firestore.update_data("meeting", chatdata_json["meetId"], {"transcript": transcript_text})
+            
+            # Log the saved transcript
+            logger.info(f"Transcript saved: {transcript_text}")
             jsondata_save = {
                 "result": True,
                 "message": ""
             }
         else:
+            # If the json data does not have the required keys, return error message
             jsondata_save = {
                 "result": False,
                 "message": "missing required keys"
@@ -140,23 +160,48 @@ def save_transcript() -> str:
 def get_supplement() -> str:
     """
     get_supplement: Get supplement data from Gemini API
+    :param: meetId: str
     :param: userName: str
-    :param: text: str
+    :param: role: str
     :return: response: dict
     """
     # Get JSON data from POST request
     chatdata_json = request.get_json()
     logger.info(f"Received data: {chatdata_json}")
 
+    # Store the supplement data and return it
+    supplements_data = list(dict())
+
     try:
         # Check if the json data has the required keys
         if ("meetId" in chatdata_json and "userName" in chatdata_json and "role" in chatdata_json):
-            testdata = {
-                "word": "テスト文章",
-                "description": "テスト補足"
-            }
+            # Get the transcript data from Firestore
+            transcript_data = connect_firestore.get_data("meeting", chatdata_json["meetId"])
+            if transcript_data:
+                # Get the transcript text from the transcript data
+                transcript_text = transcript_data["transcript"]
+                # Get the supplement data from the Gemini API
+                supplements = ask_gemini.word_extraction(chatdata_json["role"], transcript_text)
+                
+                # Get the document list from Firestore
+                saved_words = connect_firestore.get_word_list("users", chatdata_json["userName"])
+                
+                # Match the document list with the word list
+                for supplement in supplements:
+                    if supplement["word"] not in saved_words:
+                        # Add the supplement data to the supplement list
+                        supplements_data.append(supplement)
+                        # Add the supplement data to Firestore
+                        connect_firestore.add_data("users", chatdata_json["userName"], supplement)
+                    else:
+                        pass
+            # If the transcript data does not exist, return empty supplement data
+            else:
+                supplements_data = []
+
+
             jsondata_supplement = {
-                "supplement": [testdata],
+                "supplement": supplements_data,
                 "result": True,
                 "message": ""
             }
