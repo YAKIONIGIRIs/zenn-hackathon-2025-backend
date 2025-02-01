@@ -19,11 +19,13 @@ from types import FrameType
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 
-from utils.logging import logger
 from utils.ask_gemini import GeminiHelper
+from utils.logging import logger
+from utils.meeting_summarizer import MeetingSummarizer
 
 app = Flask(__name__)
-gemini_helper = dict()
+# gemini_helper = dict()
+meeting_summarizer = MeetingSummarizer()
 
 CORS(
     app,
@@ -48,6 +50,22 @@ def hello() -> str:
 
     return "Hello, World!"
 
+
+@app.route("/summarize_meeting", methods=["GET"])
+def summarize_meeting() -> str:
+    try:
+        # サンプルミーティングファイルを読み込む
+        with open("utils/sample_meeting.txt", "r", encoding="utf-8") as file:
+            meeting_text = file.read()
+
+        # 会議内容を要約
+        summary = meeting_summarizer.summarize(meeting_text)
+
+        return jsonify({"status": "success", "data": summary})
+    except Exception as e:
+        logger.error(f"Error summarizing meeting: {str(e)}")
+        return jsonify({"status": "error", "message": "会議の要約中にエラーが発生しました"}), 500
+
 @app.route("/start_meet", methods=["POST"])
 def start_meet() -> str:
     """
@@ -58,7 +76,6 @@ def start_meet() -> str:
     # Get JSON data from POST request
     chatdata_json = request.get_json()
     logger.info(f"Received data: {chatdata_json}")
-
     # Start a new meet with a new meetId
     try:
         if ("meetId" in chatdata_json):
@@ -85,7 +102,7 @@ def start_meet() -> str:
 @app.route("/save_transcript", methods=["POST"])
 def save_transcript() -> str:
     """
-    save_transcript: Save transcript data to gemini_helper
+    save_transcript: Save transcript data to Firestore
     :param: meetId: str
     :param: userName: str
     :param: transcript: str
@@ -132,7 +149,7 @@ def get_supplement() -> str:
     logger.info(f"Received data: {chatdata_json}")
 
     try:
-        # Check if userName exists in gemini_helper
+        # Check if the json data has the required keys
         if ("meetId" in chatdata_json and "userName" in chatdata_json and "role" in chatdata_json):
             testdata = {
                 "word": "テスト文章",
@@ -144,7 +161,7 @@ def get_supplement() -> str:
                 "message": ""
             }
         else:
-            # If userName does not exist, return error message
+            # If the json data does not have the required keys, return error message
             jsondata_supplement = {
                 "supplement": [],
                 "result": False,
@@ -173,14 +190,14 @@ def end_meet() -> str:
     logger.info(f"Received data: {chatdata_json}")
 
     try:
-        # Check if userName exists in gemini_helper
+        # Check if the json data has the required keys
         if ("meetId" in chatdata_json):
             jsondata_end = {
                 "result": True,
                 "message": ""
             }
         else:
-            # If userName does not exist, return error message
+            # If the json data does not have the required keys, return error message
             jsondata_end = {
                 "result": False,
                 "message": "missing required keys"
@@ -199,7 +216,6 @@ def shutdown_handler(signal_int: int, frame: FrameType) -> None:
     logger.info(f"Caught Signal {signal.strsignal(signal_int)}")
 
     from utils.logging import flush
-from google.cloud import firestore
 
     flush()
 
