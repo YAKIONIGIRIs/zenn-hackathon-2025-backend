@@ -184,7 +184,8 @@ def get_supplement() -> str:
                 
                 # Get the document list from Firestore
                 saved_words = connect_firestore.get_word_list("users", chatdata_json["userName"])
-                
+                logger.info(f"Saved words: {saved_words}")
+
                 # Match the document list with the word list
                 for supplement in supplements:
                     if supplement["word"] not in saved_words:
@@ -236,6 +237,8 @@ def end_meet() -> str:
     try:
         # Check if the json data has the required keys
         if ("meetId" in chatdata_json):
+            # Delete the transcript data from Firestore
+            connect_firestore.delete_data("meeting", chatdata_json["meetId"])
             jsondata_end = {
                 "result": True,
                 "message": ""

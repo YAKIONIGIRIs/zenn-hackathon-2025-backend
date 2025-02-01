@@ -59,6 +59,12 @@ def get_word_list(collection_name, document_id):
         print(f'No such document: {collection_name}/{document_id}')
     return word_list
 
+# Delete data from Firestore
+def delete_data(collection_name, document_id):
+    db = init_firestore()
+    db.collection(collection_name).document(document_id).delete()
+    print(f'Data deleted from {collection_name}/{document_id}')
+
 # Example usage
 if __name__ == "__main__":
     # Add data example
