@@ -40,8 +40,10 @@ def word_extraction(role: str, text: str) -> list[dict]:
     generation_config = GenerationConfig(response_mime_type="application/json", response_schema=response_schema)
     response = model.generate_content(ask_sentence, generation_config=generation_config)
 
+    # Convert the response to a list of dictionaries
+    response = json.loads(response.text)
     # Return the result
-    return response.text
+    return response
 
 
 def main():
