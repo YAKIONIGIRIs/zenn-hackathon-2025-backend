@@ -194,7 +194,7 @@ def get_supplement() -> str:
                         # Add the supplement data to the supplement list
                         supplements_data.append(supplement)
                         # Add the supplement data to Firestore
-                        connect_firestore.add_data("users", chatdata_json["userName"], supplement)
+                        connect_firestore.add_data("users", chatdata_json["userName"], {supplement["word"]: supplement["description"]})
                     else:
                         pass
             # If the transcript data does not exist, return empty supplement data
