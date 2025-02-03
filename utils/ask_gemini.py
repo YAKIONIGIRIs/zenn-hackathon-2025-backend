@@ -53,11 +53,13 @@ def adjust_text(saved_text: str, recv_text: str) -> str:
     :return: text: str
     """
     response_schema = {
+        "type": "object",
         "properties": {"text": {"type": "string"}}
     }
     ask_sentence = f"""
         ストリーミングデータを受け取り、下記文章に追加する文章を生成してください。
         - 文章自体は変更をあまり加えず、体裁を整えるようにしてください。
+        - 生成する文章は、受け取った文章を結合した文章としてください。改行は必要ありません。
         【結合前の文章】
         {saved_text}
         【追加する文章】
