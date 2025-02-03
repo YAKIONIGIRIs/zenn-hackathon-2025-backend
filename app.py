@@ -154,6 +154,61 @@ def save_transcript() -> str:
     response = jsonify(jsondata_save)
     return response
 
+@app.route("/save_transcript_gemini", methods=["POST"])
+def save_transcript_gemini() -> str:
+    """
+    save_transcript_gemini: Save transcript data to Firestore
+    :param: meetId: str
+    :param: userName: str
+    :param: transcript: str
+    :return: response: dict
+    """
+    # Get JSON data from POST request
+    chatdata_json = request.get_json()
+    logger.info(f"Received data: {chatdata_json}")
+
+    # Store the text date to the Firestrore
+    try:
+        # Check if the json data has the required keys
+        if ("meetId" in chatdata_json and "userName" in chatdata_json and "transcript" in chatdata_json):
+            # Save the transcript data to Firestore
+            transcript_text = ""
+            
+            # Get the transcript data from Firestore
+            firestore_data = connect_firestore.get_data("meeting", chatdata_json["meetId"])
+            
+            # If the transcript data exists, adjust the saved text and receive the additional text
+            if firestore_data:
+                saved_text = firestore_data["transcript"]
+                recv_text = chatdata_json["transcript"]
+                transcript_text = ask_gemini.adjust_text(saved_text, recv_text)
+                connect_firestore.update_data("meeting", chatdata_json["meetId"], {"transcript": transcript_text})
+            # If the transcript data does not exist, save the new transcript text
+            else:
+                transcript_text = chatdata_json["transcript"] 
+                connect_firestore.add_data("meeting", chatdata_json["meetId"], {"transcript": transcript_text})
+    
+            # Log the saved transcript
+            logger.info(f"Transcript saved: {transcript_text}")
+            jsondata_save = {
+                "result": True,
+                "message": ""
+            }
+        else:
+            # If the json data does not have the required keys, return error message
+            jsondata_save = {
+                "result": False,
+                "message": "missing required keys"
+            }
+    except Exception as e:
+        logger.error(f"Error saving transcript: {e}")
+        jsondata_save = {
+            "result": False,
+            "message": "error saving transcript"
+        }
+
+    response = jsonify(jsondata_save)
+    return response
 
 @app.route("/get_supplement", methods=["POST"])
 def get_supplement() -> str:
