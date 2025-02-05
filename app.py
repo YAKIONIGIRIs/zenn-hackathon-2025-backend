@@ -107,6 +107,7 @@ def save_transcript() -> str:
     :param: meetId: str
     :param: userName: str
     :param: transcript: str
+    :param: timestamp: str
     :return: response: dict
     """
     # Get JSON data from POST request
@@ -115,36 +116,39 @@ def save_transcript() -> str:
 
     # Store the text date to the Firestrore
     try:
-        # Check if the json data has the required keys
-        if ("meetId" in chatdata_json and "userName" in chatdata_json and "transcript" in chatdata_json):
-            # Save the transcript data to Firestore
-            transcript_text = ""
-            
-            # Get the transcript data from Firestore
-            firestore_data = connect_firestore.get_data("meeting", chatdata_json["meetId"])
-            
-            # If the transcript data exists, add the new transcript text to the existing transcript text
-            if firestore_data:
-                transcript_text = firestore_data["transcript"] + chatdata_json["transcript"]
-                connect_firestore.update_data("meeting", chatdata_json["meetId"], {"transcript": transcript_text})
-            # If the transcript data does not exist, save the new transcript text
-            else:
-                transcript_text = chatdata_json["transcript"]
+        chatdata_array = sorted(chatdata_json, key=lambda x: x["timestamp"], reverse=False)
+        for chatdata in chatdata_array:
+            # Check if the json data has the required keys
+            if ("meetId" in chatdata and "userName" in chatdata and "transcript" in chatdata and "timestamp" in chatdata):
                 # Save the transcript data to Firestore
-                connect_firestore.add_data("meeting", chatdata_json["meetId"], {"transcript": transcript_text})
-            
-            # Log the saved transcript
+                transcript_text = ""
+                
+                # Get the transcript data from Firestore
+                firestore_data = connect_firestore.get_data("meeting", chatdata["meetId"])
+                
+                # If the transcript data exists, add the new transcript text to the existing transcript text
+                if firestore_data:
+                    transcript_text = firestore_data["transcript"] + chatdata["transcript"]
+                    connect_firestore.update_data("meeting", chatdata["meetId"], {"transcript": transcript_text})
+                # If the transcript data does not exist, save the new transcript text
+                else:
+                    transcript_text = chatdata["transcript"]
+                    # Save the transcript data to Firestore
+                    connect_firestore.add_data("meeting", chatdata["meetId"], {"transcript": transcript_text})
+            else:
+                # If the json data does not have the required keys, return error message
+                jsondata_save = {
+                    "result": False,
+                    "message": "missing required keys"
+                }
+                response = jsonify(jsondata_save)
+                return response
+
             logger.info(f"Transcript saved: {transcript_text}")
-            jsondata_save = {
-                "result": True,
-                "message": ""
-            }
-        else:
-            # If the json data does not have the required keys, return error message
-            jsondata_save = {
-                "result": False,
-                "message": "missing required keys"
-            }
+        jsondata_save = {
+            "result": True,
+            "message": ""
+        }
     except Exception as e:
         logger.error(f"Error saving transcript: {e}")
         jsondata_save = {
@@ -155,6 +159,7 @@ def save_transcript() -> str:
     response = jsonify(jsondata_save)
     return response
 
+
 @app.route("/save_transcript_gemini", methods=["POST"])
 def save_transcript_gemini() -> str:
     """
@@ -162,6 +167,7 @@ def save_transcript_gemini() -> str:
     :param: meetId: str
     :param: userName: str
     :param: transcript: str
+    :param: timestamp: str
     :return: response: dict
     """
     # Get JSON data from POST request
@@ -170,37 +176,42 @@ def save_transcript_gemini() -> str:
 
     # Store the text date to the Firestrore
     try:
-        # Check if the json data has the required keys
-        if ("meetId" in chatdata_json and "userName" in chatdata_json and "transcript" in chatdata_json):
-            # Save the transcript data to Firestore
-            transcript_text = ""
-            
-            # Get the transcript data from Firestore
-            firestore_data = connect_firestore.get_data("meeting", chatdata_json["meetId"])
-            
-            # If the transcript data exists, adjust the saved text and receive the additional text
-            if firestore_data:
-                saved_text = firestore_data["transcript"]
-                recv_text = chatdata_json["transcript"]
-                transcript_text = ask_gemini.adjust_text(saved_text, recv_text)
-                connect_firestore.update_data("meeting", chatdata_json["meetId"], {"transcript": transcript_text})
-            # If the transcript data does not exist, save the new transcript text
+        chatdata_array = sorted(chatdata_json, key=lambda x: x["timestamp"], reverse=False)
+        for chatdata in chatdata_array:
+            # Check if the json data has the required keys
+            if ("meetId" in chatdata and "userName" in chatdata and "transcript" in chatdata and "timestamp" in chatdata):
+                # Save the transcript data to Firestore
+                transcript_text = ""
+                
+                # Get the transcript data from Firestore
+                firestore_data = connect_firestore.get_data("meeting", chatdata["meetId"])
+                
+                # If the transcript data exists, adjust the saved text and receive the additional text
+                if firestore_data:
+                    saved_text = firestore_data["transcript"]
+                    recv_text = chatdata["transcript"]
+                    logger.debug(f"Saved text: {saved_text}, Received text: {recv_text}")
+                    transcript_text = ask_gemini.adjust_text(saved_text, recv_text)
+                    connect_firestore.update_data("meeting", chatdata["meetId"], {"transcript": transcript_text})
+                # If the transcript data does not exist, save the new transcript text
+                else:
+                    transcript_text = chatdata["transcript"] 
+                    connect_firestore.add_data("meeting", chatdata["meetId"], {"transcript": transcript_text})
             else:
-                transcript_text = chatdata_json["transcript"] 
-                connect_firestore.add_data("meeting", chatdata_json["meetId"], {"transcript": transcript_text})
-    
-            # Log the saved transcript
-            logger.info(f"Transcript saved: {transcript_text}")
-            jsondata_save = {
-                "result": True,
-                "message": ""
-            }
-        else:
-            # If the json data does not have the required keys, return error message
-            jsondata_save = {
-                "result": False,
-                "message": "missing required keys"
-            }
+                # If the json data does not have the required keys, return error message
+                jsondata_save = {
+                    "result": False,
+                    "message": "missing required keys"
+                }
+                response = jsonify(jsondata_save)
+                return response
+        
+        # Log the saved transcript
+        logger.info(f"Transcript saved: {transcript_text}")
+        jsondata_save = {
+            "result": True,
+            "message": ""
+        }
     except Exception as e:
         logger.error(f"Error saving transcript: {e}")
         jsondata_save = {
