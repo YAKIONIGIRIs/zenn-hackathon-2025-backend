@@ -72,8 +72,12 @@ def adjust_text(saved_text: str, recv_text: str) -> str:
 
     # Convert the response to a dictionary
     response = json.loads(response.text)
-    # Return the result
-    return response["text"]
+    
+    # Check if the response contains the expected text
+    if "text" in response:
+        return response["text"]
+    else:
+        raise ValueError("Cannot get the response text. The candidate is likely blocked by the safety filters.")
 
 def main():
     # Sample sentence
