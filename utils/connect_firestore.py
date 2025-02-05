@@ -15,7 +15,7 @@ def init_firestore():
 def add_data(collection_name, document_id, data):
     # Initialize Firestore DB
     db = init_firestore()
-    db.collection(collection_name).document(document_id).set(data)
+    db.collection(collection_name).document(document_id).set(data, merge=True)
     print(f'Data added to {collection_name}/{document_id}')
 
 # Get data from Firestore

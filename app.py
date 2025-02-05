@@ -129,7 +129,8 @@ def save_transcript() -> str:
                 connect_firestore.update_data("meeting", chatdata_json["meetId"], {"transcript": transcript_text})
             # If the transcript data does not exist, save the new transcript text
             else:
-                transcript_text = chatdata_json["transcript"] 
+                transcript_text = chatdata_json["transcript"]
+                # Save the transcript data to Firestore
                 connect_firestore.add_data("meeting", chatdata_json["meetId"], {"transcript": transcript_text})
             
             # Log the saved transcript
