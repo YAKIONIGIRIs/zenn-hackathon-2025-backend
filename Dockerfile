@@ -16,6 +16,14 @@ FROM python:3.12.8-slim
 # Allow statements and log messages to immediately appear in the Cloud Run logs
 ENV PYTHONUNBUFFERED 1
 
+# Install MeCab and its dependencies
+RUN apt-get update && apt-get install -y \
+    mecab \
+    libmecab-dev \
+    mecab-ipadic-utf8 \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
 # Create and change to the app directory.
 WORKDIR /usr/src/app
 
