@@ -127,7 +127,7 @@ def save_transcript() -> str:
                 if firestore_data:
                     comparison_text = firestore_data["archive_text"]
                     # Merge the new text with the archive text
-                    confirmed_text, archive_text = merge_text.merge(chatdata["meetId"], comparison_text, chatdata["transcript"])
+                    confirmed_text, archive_text = merge_text.merge(comparison_text, chatdata["transcript"])
                     # Save the merged text to Firestore
                     connect_firestore.update_data("meeting", chatdata["meetId"], {"archive_text": archive_text, "transcript": firestore_data["transcript"] + confirmed_text})
                     logger.debug(f"Confirmed text: {confirmed_text}, Archive text: {archive_text}")

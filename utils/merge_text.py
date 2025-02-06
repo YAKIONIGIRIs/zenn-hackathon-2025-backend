@@ -1,77 +1,62 @@
-import MeCab
+import difflib
 
-# 形態素解析の初期化
-mecab = MeCab.Tagger()
-
-# 形態素解析して単語のリストを取得
-def tokenize(text):
-    parsed = mecab.parse(text)
-    return [line.split("\t")[0] for line in parsed.splitlines() if "\t" in line]
-
-def merge(meetId: str, comparison_text: str, new_text: str) -> str:
-    """
-    
-    """
-    # 返り値の初期化
-    confirmed_text = ""
+def merge(original_text, new_text):
     archive_text = ""
+    confirmed_text = ""
 
-    # 既存の重複検知用バッファと新しいテキストを形態素解析
-    existing_tokens = tokenize(comparison_text)
-    new_tokens = tokenize(new_text)
-    if len(existing_tokens) == 0:
-        existing_tokens = [""] # 重複検知用バッファが空の場合の対策
-    if len(new_tokens) == 0:
-        new_tokens = [""] # 新しいテキストが空の場合の対策
+    # Remove punctuation marks from the texts for comparison
+    punctuation_marks = "、。！？"
+    translation_table = str.maketrans("", "", punctuation_marks)
+    original_text_no_punctuation = original_text.translate(translation_table)
+    new_text_no_punctuation = new_text.translate(translation_table)
 
-    # 重複部分の検出
-    overlap_index = 0
-    flag = 0
-    for index, existing_token in enumerate(existing_tokens):
-        # 消えたトークンを検知
-        if flag == 0:
-            if existing_token == new_tokens[0]:
-                overlap_index = index
-                flag = 1
-        elif flag == 1 and flag == 2:
-            if existing_token == new_tokens[flag]:
-                flag += 1
-            else:
-                flag = 0
-                overlap_index = 0
-        elif flag == 3:
-            break
-        else:
-            pass
 
-    # 消えたトークンを文章確定用変数に追加
-    if overlap_index > 0:
-        confirmed_text += "".join(existing_tokens[:overlap_index])
-    elif overlap_index == 0 and new_tokens[0] == "":
-        confirmed_text += comparison_text
+    matcher = difflib.SequenceMatcher(None, original_text_no_punctuation, new_text_no_punctuation)
+    longest_match = matcher.find_longest_match(0, len(original_text_no_punctuation), 0, len(new_text_no_punctuation))
+    print("longest_match: {}".format(longest_match))
 
-    # 重複検知用のバッファを新しいテキストで更新（新しい情報を優先）
-    archive_text = new_text
+    if longest_match.b != 0:
+        archive_text = new_text_no_punctuation
+        confirmed_text = original_text_no_punctuation
 
-    return [confirmed_text, archive_text]
+    else:
+        # Extract matching text only first block
+        index_match_head = longest_match.a
+        index_match_tail = longest_match.a + longest_match.size
+        print("match: {}".format(original_text_no_punctuation[index_match_head:index_match_tail]))
+        
+        archive_text = new_text_no_punctuation
+        confirmed_text = original_text_no_punctuation[:index_match_head]
+
+    return confirmed_text, archive_text
 
 if __name__ == "__main__":
-    # 送られてくるテキスト例
-    texts = [
-        "",
-        "これは最初の文です。次に続く内容があります。",
-        "次に続く内容があります。さらに新しい情報も追加されます。",
-        "さらに新しい情報も追加されます。最後の部分です。",
+    # Test list
+    original_text = ""
+    new_text = ""
+    confirmed_buffer = ""
+    test_list = [
+        "変更前の文字列です。この文字列は語尾だけ変更されます",
+        "文字列です。この文字列は語尾だけ変更されました。変更後の文字列です",
+        "文字列です。この文字列は語尾だけ変更されました。変更後の文字列です",
+        "語尾だけ変更されました。変更後の文字列です。このまま文章を終了します。あり",
+        "まま文章を終了します。ありがとうございました。今後",
+        "。今後ともよろしくお願いいたします。",
+        "。うれしいです。",
         ""
     ]
 
-    # 初期の比較テキスト
-    comparison_text = texts[0]
-    meetId = "example_meet_id"
+    # Test
+    for get_text in test_list:
+        new_text = get_text
 
-    for new_text in texts[1:]:
-        confirmed_text, archive_text = merge(meetId, comparison_text, new_text)
-        print("Confirmed Text: ", confirmed_text)
-        print("Archive Text: ", archive_text)
-        comparison_text = archive_text
+        # print("original_text: {}, new_text: {}".format(original_text, new_text))
+        confirmed_text, archive_text = merge(original_text, new_text)
+        
+        # print("confirmed_text: {}".format(confirmed_text))
+        # print("archive_text: {}".format(archive_text))
 
+        confirmed_buffer += confirmed_text
+        original_text = archive_text
+
+    print("confirmed_buffer: {}".format(confirmed_buffer))
