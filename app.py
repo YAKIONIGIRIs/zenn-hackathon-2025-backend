@@ -23,6 +23,7 @@ from utils.logging import logger
 from utils.meeting_summarizer import MeetingSummarizer
 import utils.ask_gemini as ask_gemini
 import utils.connect_firestore as connect_firestore
+import utils.merge_text as merge_text
 
 app = Flask(__name__)
 # gemini_helper = dict()
@@ -120,21 +121,19 @@ def save_transcript() -> str:
         for chatdata in chatdata_array:
             # Check if the json data has the required keys
             if ("meetId" in chatdata and "userName" in chatdata and "transcript" in chatdata and "timestamp" in chatdata):
-                # Save the transcript data to Firestore
-                transcript_text = ""
-                
-                # Get the transcript data from Firestore
+                # Load the archive text from Firestore
                 firestore_data = connect_firestore.get_data("meeting", chatdata["meetId"])
-                
-                # If the transcript data exists, add the new transcript text to the existing transcript text
+                # If the archive text exists, save the archive text to the comparison text
                 if firestore_data:
-                    transcript_text = firestore_data["transcript"] + chatdata["transcript"]
-                    connect_firestore.update_data("meeting", chatdata["meetId"], {"transcript": transcript_text})
-                # If the transcript data does not exist, save the new transcript text
+                    comparison_text = firestore_data["archive_text"]
+                    # Merge the new text with the archive text
+                    confirmed_text, archive_text = merge_text.merge(chatdata["meetId"], comparison_text, chatdata["transcript"])
+                    # Save the merged text to Firestore
+                    connect_firestore.update_data("meeting", chatdata["meetId"], {"archive_text": archive_text, "transcript": firestore_data["transcript"] + confirmed_text})
+                    logger.debug(f"Confirmed text: {confirmed_text}, Archive text: {archive_text}")
+                # If the archive text does not exist, save the new text to the comparison text
                 else:
-                    transcript_text = chatdata["transcript"]
-                    # Save the transcript data to Firestore
-                    connect_firestore.add_data("meeting", chatdata["meetId"], {"transcript": transcript_text})
+                    connect_firestore.add_data("meeting", chatdata["meetId"], {"archive_text": chatdata["transcript"], "transcript": ""})
             else:
                 # If the json data does not have the required keys, return error message
                 jsondata_save = {
@@ -144,7 +143,7 @@ def save_transcript() -> str:
                 response = jsonify(jsondata_save)
                 return response
 
-            logger.info(f"Transcript saved: {transcript_text}")
+            logger.info(f"Transcript saved: {chatdata['transcript']}")
         jsondata_save = {
             "result": True,
             "message": ""
