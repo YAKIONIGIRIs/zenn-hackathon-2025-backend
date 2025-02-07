@@ -45,40 +45,6 @@ def word_extraction(role: str, text: str) -> list[dict]:
     # Return the result
     return response
 
-def adjust_text(saved_text: str, recv_text: str) -> str:
-    """
-    Adjust the saved text and receive the additional text
-    :param saved_text: str
-    :param recv_text: str
-    :return: text: str
-    """
-    response_schema = {
-        "type": "object",
-        "properties": {"text": {"type": "string"}}
-    }
-    ask_sentence = f"""
-        ストリーミングデータを受け取り、下記文章に追加する文章を生成してください。
-        - 文章自体は変更をあまり加えず、体裁を整えるようにしてください。
-        - 生成する文章は、受け取った文章を結合した文章としてください。改行は必要ありません。
-        【結合前の文章】
-        {saved_text}
-        【追加する文章】
-        {recv_text}
-    """
-
-    # This function should call the Gemini API to adjust the saved text and receive the additional text
-    generation_config = GenerationConfig(response_mime_type="application/json", response_schema=response_schema)
-    response = model.generate_content(ask_sentence, generation_config=generation_config)
-
-    # Convert the response to a dictionary
-    response = json.loads(response.text)
-    
-    # Check if the response contains the expected text
-    if "text" in response:
-        return response["text"]
-    else:
-        raise ValueError("Cannot get the response text. The candidate is likely blocked by the safety filters.")
-
 def main():
     # Sample sentence
     text = """
