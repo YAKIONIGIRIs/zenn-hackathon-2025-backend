@@ -33,10 +33,10 @@ CORS(
     app,
     resources={
         r"/*": {
-            "origins": ["*", "chrome-extension://*", "https://meet.google.com"],
+            "origins": ["chrome-extension://bnkfhjcmogddbdjkaapffkimpflkdamc", "https://meet.google.com"],
             "methods": ["GET", "POST", "OPTIONS"],
             "allow_headers": ["Content-Type", "Authorization"],
-            "supports_credentials": False,
+            "supports_credentials": True,
         }
     },
 )
