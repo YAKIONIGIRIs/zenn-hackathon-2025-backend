@@ -210,6 +210,7 @@ def save_transcript_gemini() -> str:
         # Log the saved transcript
         logger.info(f"Transcript saved: {transcript_text}")
         jsondata_save = {
+            "supplement": transcript_text,
             "result": True,
             "message": ""
         }
