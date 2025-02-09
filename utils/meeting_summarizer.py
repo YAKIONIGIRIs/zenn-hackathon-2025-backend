@@ -11,10 +11,6 @@ vertexai.init(project=PROJECT_ID, location="us-central1")
 response_schema = {
     "type": "object",
     "properties": {
-        "tts_summary": {
-            "type": "string",
-            "description": "会議の内容を自然な会話調で要約したもの",
-        },
         "bullet_points": {
             "type": "array",
             "items": {"type": "string"},
@@ -26,7 +22,7 @@ response_schema = {
             "description": "会議で決定されたアクションアイテム",
         },
     },
-    "required": ["tts_summary", "bullet_points", "action_items"],
+    "required": ["bullet_points", "action_items"],
 }
 
 
@@ -42,13 +38,13 @@ class MeetingSummarizer:
             meeting_text: 会議の内容テキスト
 
         Returns:
-            dict: 生成された要約（TTSサマリー、箇条書き、アクションアイテム）
+            dict: 生成された要約（箇条書き、アクションアイテム）
         """
         prompt = f"""
         以下の会議内容を要約してください。
-        - 全体の要約は自然な日本語で
         - 重要なポイントは箇条書きで
         - アクションアイテムは具体的なTodoとして
+        - 簡潔な回答を心がけてください
 
         会議内容:
         {meeting_text}
