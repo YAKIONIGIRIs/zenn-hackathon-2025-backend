@@ -55,17 +55,40 @@ def hello() -> str:
     return "Hello, World!"
 
 
-@app.route("/summarize_meeting", methods=["GET"])
+@app.route("/summarize_meeting", methods=["POST"])
 def summarize_meeting() -> str:
     try:
-        # サンプルミーティングファイルを読み込む
-        with open("utils/sample_meeting.txt", "r", encoding="utf-8") as file:
-            meeting_text = file.read()
+        # リクエストボディからuserNameを取得
+        request_data = request.get_json()
+        if "userName" not in request_data:
+            return jsonify({"status": "error", "message": "userNameが必要です"}), 400
+
+        user_name = request_data["userName"]
+
+        # 特定のユーザーの全てのミーティングデータを取得
+        all_meetings = connect_firestore.get_collection_data("minutes")
+        if not all_meetings:
+            return jsonify({"status": "error", "message": "ミーティングデータが見つかりませんでした"}), 404
+
+        # ユーザーの最新のミーティングを探す
+        latest_timestamp = None
+        latest_content = None
+
+        for doc_id, meeting_data in all_meetings.items():
+            if meeting_data.get("userName") == user_name and "timestamp" in meeting_data:
+                current_timestamp = meeting_data["timestamp"]
+                if latest_timestamp is None or current_timestamp > latest_timestamp:
+                    latest_timestamp = current_timestamp
+                    latest_content = meeting_data.get("content")
+
+        if latest_content is None:
+            return jsonify({"status": "error", "message": "ユーザーのミーティングデータが見つかりませんでした"}), 404
 
         # 会議内容を要約
-        summary = meeting_summarizer.summarize(meeting_text)
+        summary = meeting_summarizer.summarize(latest_content)
 
         return jsonify({"status": "success", "data": summary})
+
     except Exception as e:
         logger.error(f"Error summarizing meeting: {str(e)}")
         return jsonify({"status": "error", "message": "会議の要約中にエラーが発生しました"}), 500
