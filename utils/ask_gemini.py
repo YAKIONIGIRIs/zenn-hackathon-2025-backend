@@ -1,17 +1,18 @@
-import os
 import json
+import os
 import sys
 
 import vertexai
 from vertexai.generative_models import GenerationConfig, GenerativeModel
 
 # Set the project and location
-project_id = os.getenv('GOOGLE_CLOUD_PROJECT')
-location = os.getenv('GOOGLE_CLOUD_REGION')
+project_id = os.getenv("GOOGLE_CLOUD_PROJECT")
+location = os.getenv("GOOGLE_CLOUD_REGION")
 
 # Initialize Vertex AI
 vertexai.init(project=project_id, location=location)
 model = GenerativeModel("gemini-1.5-flash-002")
+
 
 def word_extraction(role: str, text: str) -> list[dict]:
     """
@@ -28,10 +29,14 @@ def word_extraction(role: str, text: str) -> list[dict]:
         },
     }
     ask_sentence = f"""
-        下記文章には補足が必要な単語がある可能性があります。
-        - 補足が必要な単語を抽出してください。
-        - 各単語ごとに補足を書いてください。
-        - 読み手が{role}であるため、抽出する単語に注意してください。
+        下記の日本語の文章から、{role}にとって本当に補足説明が必要な専門用語や重要な概念を抽出してください。
+        
+        ルール：
+        - 必ず日本語で回答してください
+        - 一般的な日常用語（例：依頼、相談、コンポーネントなど）は除外してください
+        - {role}の視点で、本当に説明が必要な用語のみを抽出してください
+        - 各用語について、{role}向けの簡潔で分かりやすい説明を付けてください
+        
         【文章】
         {text}
     """
@@ -44,6 +49,7 @@ def word_extraction(role: str, text: str) -> list[dict]:
     response = json.loads(response.text)
     # Return the result
     return response
+
 
 def main():
     # Sample sentence
@@ -81,6 +87,7 @@ def main():
     # Example usage
     response = word_extraction(role, text)
     print(response)
-    
+
+
 if __name__ == "__main__":
     main()
