@@ -66,7 +66,7 @@ def summarize_meeting() -> str:
         user_name = request_data["userName"]
 
         # 特定のユーザーの全てのミーティングデータを取得
-        all_meetings = connect_firestore.get_collection_data("minutes")
+        all_meetings = connect_firestore.get_data("minutes", user_name)
         if not all_meetings:
             return jsonify({"status": "error", "message": "ミーティングデータが見つかりませんでした"}), 404
 
