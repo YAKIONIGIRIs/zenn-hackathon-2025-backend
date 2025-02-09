@@ -75,7 +75,7 @@ def summarize_meeting() -> str:
         latest_content = None
 
         for doc_id, meeting_data in all_meetings.items():
-            if meeting_data.get("userName") == user_name and "timestamp" in meeting_data:
+            if "timestamp" in meeting_data:
                 current_timestamp = meeting_data["timestamp"]
                 if latest_timestamp is None or current_timestamp > latest_timestamp:
                     latest_timestamp = current_timestamp
