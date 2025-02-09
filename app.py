@@ -19,11 +19,11 @@ from types import FrameType
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 
-from utils.logging import logger
-from utils.meeting_summarizer import MeetingSummarizer
 import utils.ask_gemini as ask_gemini
 import utils.connect_firestore as connect_firestore
 import utils.merge_text as merge_text
+from utils.logging import logger
+from utils.meeting_summarizer import MeetingSummarizer
 
 app = Flask(__name__)
 # gemini_helper = dict()
@@ -70,6 +70,7 @@ def summarize_meeting() -> str:
         logger.error(f"Error summarizing meeting: {str(e)}")
         return jsonify({"status": "error", "message": "会議の要約中にエラーが発生しました"}), 500
 
+
 @app.route("/start_meet", methods=["POST"])
 def start_meet() -> str:
     """
@@ -82,26 +83,18 @@ def start_meet() -> str:
     logger.info(f"Received data: {chatdata_json}")
     # Start a new meet with a new meetId
     try:
-        if ("meetId" in chatdata_json):
+        if "meetId" in chatdata_json:
             # Return the meetId as the userName
-            jsondata_start = {
-                "result": True,
-                "message": ""
-            }
+            jsondata_start = {"result": True, "message": ""}
         else:
-            jsondata_start = {
-                "result": False,
-                "message": "missing required keys"
-            }
+            jsondata_start = {"result": False, "message": "missing required keys"}
     except Exception as e:
         logger.error(f"Error starting meet: {e}")
-        jsondata_start = {
-            "result": False,
-            "message": "error starting meet"
-        }
+        jsondata_start = {"result": False, "message": "error starting meet"}
 
     response = jsonify(jsondata_start)
     return response
+
 
 @app.route("/save_transcript", methods=["POST"])
 def save_transcript() -> str:
@@ -122,7 +115,7 @@ def save_transcript() -> str:
         chatdata_array = sorted(chatdata_json, key=lambda x: x["timestamp"], reverse=False)
         for chatdata in chatdata_array:
             # Check if the json data has the required keys
-            if ("meetId" in chatdata and "userName" in chatdata and "transcript" in chatdata and "timestamp" in chatdata):
+            if "meetId" in chatdata and "userName" in chatdata and "transcript" in chatdata and "timestamp" in chatdata:
                 # Load the archive text from Firestore
                 firestore_data = connect_firestore.get_data("meeting", chatdata["meetId"])
                 # If the archive text exists, save the archive text to the comparison text
@@ -131,34 +124,32 @@ def save_transcript() -> str:
                     # Merge the new text with the archive text
                     confirmed_text, archive_text = merge_text.merge(comparison_text, chatdata["transcript"])
                     # Save the merged text to Firestore
-                    connect_firestore.update_data("meeting", chatdata["meetId"], {"archive_text": archive_text, "transcript": firestore_data["transcript"] + confirmed_text})
+                    connect_firestore.update_data(
+                        "meeting",
+                        chatdata["meetId"],
+                        {"archive_text": archive_text, "transcript": firestore_data["transcript"] + confirmed_text},
+                    )
                     logger.debug(f"Confirmed text: {confirmed_text}, Archive text: {archive_text}")
                 # If the archive text does not exist, save the new text to the comparison text
                 else:
-                    connect_firestore.add_data("meeting", chatdata["meetId"], {"archive_text": chatdata["transcript"], "transcript": ""})
+                    connect_firestore.add_data(
+                        "meeting", chatdata["meetId"], {"archive_text": chatdata["transcript"], "transcript": ""}
+                    )
             else:
                 # If the json data does not have the required keys, return error message
-                jsondata_save = {
-                    "result": False,
-                    "message": "missing required keys"
-                }
+                jsondata_save = {"result": False, "message": "missing required keys"}
                 response = jsonify(jsondata_save)
                 return response
 
             logger.info(f"Transcript saved: {chatdata['transcript']}")
-        jsondata_save = {
-            "result": True,
-            "message": ""
-        }
+        jsondata_save = {"result": True, "message": ""}
     except Exception as e:
         logger.error(f"Error saving transcript: {e}")
-        jsondata_save = {
-            "result": False,
-            "message": "error saving transcript"
-        }
+        jsondata_save = {"result": False, "message": "error saving transcript"}
 
     response = jsonify(jsondata_save)
     return response
+
 
 @app.route("/get_supplement", methods=["POST"])
 def get_supplement() -> str:
@@ -178,7 +169,7 @@ def get_supplement() -> str:
 
     try:
         # Check if the json data has the required keys
-        if ("meetId" in chatdata_json and "userName" in chatdata_json and "role" in chatdata_json):
+        if "meetId" in chatdata_json and "userName" in chatdata_json and "role" in chatdata_json:
             # Get the transcript data from Firestore
             transcript_data = connect_firestore.get_data("meeting", chatdata_json["meetId"])
             if transcript_data:
@@ -187,7 +178,7 @@ def get_supplement() -> str:
                 # Get the supplement data from the Gemini API
                 supplements = ask_gemini.word_extraction(chatdata_json["role"], transcript_text)
                 logger.debug(f"Supplements: {supplements}")
-                
+
                 # Get the document list from Firestore
                 saved_words = connect_firestore.get_word_list("users", chatdata_json["userName"])
                 logger.debug(f"Saved words: {saved_words}")
@@ -199,36 +190,26 @@ def get_supplement() -> str:
                         # Add the supplement data to the supplement list
                         supplements_data.append(supplement)
                         # Add the supplement data to Firestore
-                        connect_firestore.add_data("users", chatdata_json["userName"], {supplement["word"]: supplement["description"]})
+                        connect_firestore.add_data(
+                            "users", chatdata_json["userName"], {supplement["word"]: supplement["description"]}
+                        )
                     else:
                         pass
             # If the transcript data does not exist, return empty supplement data
             else:
                 supplements_data = []
 
-
-            jsondata_supplement = {
-                "supplement": supplements_data,
-                "result": True,
-                "message": ""
-            }
+            jsondata_supplement = {"supplement": supplements_data, "result": True, "message": ""}
         else:
             # If the json data does not have the required keys, return error message
-            jsondata_supplement = {
-                "supplement": [],
-                "result": False,
-                "message": "missing required keys"
-            }
+            jsondata_supplement = {"supplement": [], "result": False, "message": "missing required keys"}
     except Exception as e:
         logger.error(f"Error getting supplement: {e}")
-        jsondata_supplement = {
-            "supplement": [],
-            "result": False,
-            "message": "error getting supplement"
-        }
+        jsondata_supplement = {"supplement": [], "result": False, "message": "error getting supplement"}
 
     response = jsonify(jsondata_supplement)
     return response
+
 
 @app.route("/end_meet", methods=["POST"])
 def end_meet() -> str:
@@ -243,28 +224,20 @@ def end_meet() -> str:
 
     try:
         # Check if the json data has the required keys
-        if ("meetId" in chatdata_json):
+        if "meetId" in chatdata_json:
             # Delete the transcript data from Firestore
             connect_firestore.delete_data("meeting", chatdata_json["meetId"])
-            jsondata_end = {
-                "result": True,
-                "message": ""
-            }
+            jsondata_end = {"result": True, "message": ""}
         else:
             # If the json data does not have the required keys, return error message
-            jsondata_end = {
-                "result": False,
-                "message": "missing required keys"
-            }
+            jsondata_end = {"result": False, "message": "missing required keys"}
     except Exception as e:
         logger.error(f"Error ending meet: {e}")
-        jsondata_end = {
-            "result": False,
-            "message": "error ending meet"
-        }
+        jsondata_end = {"result": False, "message": "error ending meet"}
 
     response = jsonify(jsondata_end)
     return response
+
 
 def shutdown_handler(signal_int: int, frame: FrameType) -> None:
     logger.info(f"Caught Signal {signal.strsignal(signal_int)}")
