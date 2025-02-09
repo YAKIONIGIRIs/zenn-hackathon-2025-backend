@@ -172,7 +172,7 @@ def get_supplement() -> str:
         if "meetId" in chatdata_json and "userName" in chatdata_json and "role" in chatdata_json:
             # Get the transcript data from Firestore
             transcript_data = connect_firestore.get_data("meeting", chatdata_json["meetId"])
-            if transcript_data:
+            if transcript_data and transcript_data["transcript"]:
                 # Get the transcript text from the transcript data
                 transcript_text = transcript_data["transcript"]
                 # Get the supplement data from the Gemini API
